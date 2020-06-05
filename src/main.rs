@@ -21,6 +21,8 @@ fn main() {
     let opts: Opts = Opts::parse();
     let (tx, rx): (mpsc::Sender<String>, mpsc::Receiver<String>) = mpsc::channel();
 
+    println!("Watching {:#?}", opts.feed_urls);
+
     for feed_url in opts.feed_urls {
         let tx = tx.clone();
         thread::spawn(move || poll(&feed_url, tx));
