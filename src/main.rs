@@ -115,12 +115,13 @@ fn poll(feed_url: &String, tx: mpsc::Sender<String>) {
                         continue;
                     }
                     match tx.send(s.clone()) {
-                        Ok(_) => (),
+                        Ok(_) => {
+                            feed_guids.push(s);
+                        }
                         Err(e) => {
                             println!("failed to send message to receiver thread: {}", e);
                         }
                     };
-                    feed_guids.push(s);
                 }
                 None => {
                     println!("got item without guid - skipping");
