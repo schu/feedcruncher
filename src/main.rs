@@ -13,6 +13,8 @@ use clap::Clap;
 #[clap(version = "0.1.0")]
 struct Opts {
     feed_urls: Vec<String>,
+    #[clap(short, long, default_value = "600")]
+    sleep_dur: u64,
     #[clap(short, long)]
     webhook_url: String,
 }
@@ -21,13 +23,14 @@ type Result<T> = std::result::Result<T, String>;
 
 fn main() {
     let opts: Opts = Opts::parse();
+    let sleep_dur = opts.sleep_dur;
     let (tx, rx): (mpsc::Sender<rss::Item>, mpsc::Receiver<rss::Item>) = mpsc::channel();
 
     println!("Watching {:#?}", opts.feed_urls);
 
     for feed_url in opts.feed_urls {
         let tx = tx.clone();
-        thread::spawn(move || poll(&feed_url, tx));
+        thread::spawn(move || poll(&feed_url, tx, time::Duration::from_secs(sleep_dur)));
     }
 
     loop {
@@ -97,12 +100,12 @@ fn guids_from_items(items: &Vec<rss::Item>) -> Vec<String> {
         .collect()
 }
 
-fn poll(feed_url: &String, tx: mpsc::Sender<rss::Item>) {
+fn poll(feed_url: &String, tx: mpsc::Sender<rss::Item>, sleep_dur: time::Duration) {
     let feed_items = get_feed_items(feed_url).unwrap();
     let mut feed_guids = guids_from_items(&feed_items);
 
     loop {
-        thread::sleep(time::Duration::from_secs(600));
+        thread::sleep(sleep_dur);
 
         let feed_items = match get_feed_items(feed_url) {
             Ok(items) => items,
