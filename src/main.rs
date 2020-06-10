@@ -21,7 +21,7 @@ type Result<T> = std::result::Result<T, String>;
 
 fn main() {
     let opts: Opts = Opts::parse();
-    let (tx, rx): (mpsc::Sender<String>, mpsc::Receiver<String>) = mpsc::channel();
+    let (tx, rx): (mpsc::Sender<rss::Item>, mpsc::Receiver<rss::Item>) = mpsc::channel();
 
     println!("Watching {:#?}", opts.feed_urls);
 
@@ -39,7 +39,7 @@ fn main() {
                 continue;
             }
         };
-        println!("{}", received);
+        println!("{:#?}", received);
         match push_message(&opts.webhook_url, &received) {
             Ok(_) => (),
             Err(e) => {
@@ -49,11 +49,16 @@ fn main() {
     }
 }
 
-fn push_message(target_url: &String, msg: &String) -> Result<String> {
+fn push_message(target_url: &String, item: &rss::Item) -> Result<String> {
+    let guid = match item.guid() {
+        Some(guid) => guid.value().to_string(),
+        None => return Err("got item without guid".to_string()),
+    };
+
     match reqwest::blocking::Client::new()
         .post(target_url)
         .header(reqwest::header::CONTENT_TYPE, "application/json")
-        .body(format!("{{\"content\": \"{}\"}}", msg))
+        .body(format!("{{\"content\": \"{}\"}}", guid))
         .send()
     {
         Ok(res) => Ok(format!("{:#?}", res)),
@@ -92,7 +97,7 @@ fn guids_from_items(items: &Vec<rss::Item>) -> Vec<String> {
         .collect()
 }
 
-fn poll(feed_url: &String, tx: mpsc::Sender<String>) {
+fn poll(feed_url: &String, tx: mpsc::Sender<rss::Item>) {
     let feed_items = get_feed_items(feed_url).unwrap();
     let mut feed_guids = guids_from_items(&feed_items);
 
@@ -114,7 +119,7 @@ fn poll(feed_url: &String, tx: mpsc::Sender<String>) {
                     if feed_guids.contains(&s) {
                         continue;
                     }
-                    match tx.send(s.clone()) {
+                    match tx.send(item) {
                         Ok(_) => {
                             feed_guids.push(s);
                         }
