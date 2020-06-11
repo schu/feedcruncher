@@ -1,13 +1,13 @@
+#![deny(unused, nonstandard_style, future_incompatible)]
+#![warn(rust_2018_idioms)]
+
 use std::sync::mpsc;
 use std::thread;
 use std::time;
 
-extern crate reqwest;
-
-extern crate rss;
-
-extern crate clap;
 use clap::Clap;
+use reqwest;
+use rss;
 
 #[derive(Clap, Debug)]
 #[clap(version = "0.1.0")]
