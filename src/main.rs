@@ -226,6 +226,9 @@ mod tests {
         // Give thread a moment to start
         thread::sleep(time::Duration::from_millis(200));
 
+        // An item with guid "2" exists already, i.e. this one should not be send/received
+        feed.add_item(create_test_item("2".to_string()));
+
         let item_new = create_test_item("3".to_string());
 
         feed.add_item(item_new.clone());
