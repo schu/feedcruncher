@@ -1,13 +1,13 @@
+#![deny(unused, nonstandard_style, future_incompatible)]
+#![warn(rust_2018_idioms)]
+
 use std::sync::mpsc;
 use std::thread;
 use std::time;
 
-extern crate reqwest;
-
-extern crate rss;
-
-extern crate clap;
 use clap::Clap;
+use reqwest;
+use rss;
 
 #[derive(Clap, Debug)]
 #[clap(version = "0.1.0")]
@@ -124,7 +124,7 @@ fn poll(feed: &impl RSSFeed, tx: mpsc::Sender<rss::Item>, sleep_dur: time::Durat
     loop {
         thread::sleep(sleep_dur);
 
-        let feed_items = match feed.get_items() {
+        let feed_items: Vec<rss::Item> = match feed.get_items() {
             Ok(items) => items,
             Err(e) => {
                 println!("failed to get feed: {}", e);
@@ -132,27 +132,35 @@ fn poll(feed: &impl RSSFeed, tx: mpsc::Sender<rss::Item>, sleep_dur: time::Durat
             }
         };
 
-        for item in feed_items {
-            match item.guid() {
+        // Filter out items with known, no or empty guid
+        let new_items: Vec<rss::Item> = feed_items
+            .into_iter()
+            .filter(|item| match item.guid() {
                 Some(guid) => {
-                    let s = guid.value().to_string();
-                    if feed_guids.contains(&s) {
-                        continue;
+                    let guid_val = guid.value().to_string();
+                    if feed_guids.contains(&guid_val) || guid_val.is_empty() {
+                        false
+                    } else {
+                        true
                     }
-                    match tx.send(item) {
-                        Ok(_) => {
-                            feed_guids.push(s);
-                        }
-                        Err(e) => {
-                            println!("failed to send message to receiver thread: {}", e);
-                        }
-                    };
                 }
-                None => {
-                    println!("got item without guid - skipping");
-                    continue;
+                None => false,
+            })
+            .collect();
+
+        // Send new items to receiver thread
+        for item in new_items {
+            // Items without guid were filtered out above, i.e. safe to unwrap
+            let guid = item.guid().unwrap().value().to_string();
+
+            match tx.send(item) {
+                Ok(_) => {
+                    feed_guids.push(guid);
                 }
-            }
+                Err(e) => {
+                    println!("failed to send message to receiver thread: {}", e);
+                }
+            };
         }
     }
 }
