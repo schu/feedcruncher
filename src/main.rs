@@ -5,9 +5,12 @@ use std::sync::mpsc;
 use std::thread;
 use std::time;
 
+use anyhow::{anyhow, Result};
 use clap::Clap;
 use reqwest;
 use rss;
+use serde::Serialize;
+use serde_json;
 
 #[derive(Clap, Debug)]
 #[clap(version = "0.1.0")]
@@ -18,8 +21,6 @@ struct Opts {
     #[clap(short, long)]
     webhook_url: String,
 }
-
-type Result<T> = std::result::Result<T, String>;
 
 fn main() {
     let opts: Opts = Opts::parse();
@@ -34,6 +35,8 @@ fn main() {
         thread::spawn(move || poll(&feed, tx, time::Duration::from_secs(sleep_dur)));
     }
 
+    let webhook = WebhookDiscord::new(opts.webhook_url);
+
     loop {
         println!("Waiting for new feed items ...");
         let received = match rx.recv() {
@@ -44,7 +47,7 @@ fn main() {
             }
         };
         println!("{:#?}", received);
-        match push_message(&opts.webhook_url, &received) {
+        match webhook.push(&received) {
             Ok(_) => (),
             Err(e) => {
                 println!("failed to push message: {}", e);
@@ -69,37 +72,55 @@ impl FeedReqwest {
 
 impl RSSFeed for FeedReqwest {
     fn get_items(&self) -> Result<Vec<rss::Item>> {
-        let res = match reqwest::blocking::get(&self.url) {
-            Ok(r) => r,
-            Err(e) => return Err(e.to_string()),
-        };
-
-        let feed_xml = match res.text() {
-            Ok(s) => s,
-            Err(e) => return Err(e.to_string()),
-        };
-
-        match rss::Channel::read_from(feed_xml.as_bytes()) {
-            Ok(channel) => Ok(channel.into_items()),
-            Err(e) => Err(e.to_string()),
-        }
+        let res = reqwest::blocking::get(&self.url)?;
+        let feed_xml = res.text()?;
+        Ok(rss::Channel::read_from(feed_xml.as_bytes())?.into_items())
     }
 }
 
-fn push_message(target_url: &String, item: &rss::Item) -> Result<String> {
-    let guid = match item.guid() {
-        Some(guid) => guid.value().to_string(),
-        None => return Err("got item without guid".to_string()),
-    };
+trait Webhook {
+    fn push(&self, item: &rss::Item) -> Result<()>;
+}
 
-    match reqwest::blocking::Client::new()
-        .post(target_url)
-        .header(reqwest::header::CONTENT_TYPE, "application/json")
-        .body(format!("{{\"content\": \"{}\"}}", guid))
-        .send()
-    {
-        Ok(res) => Ok(format!("{:#?}", res)),
-        Err(e) => Err(e.to_string()),
+struct WebhookDiscord {
+    url: String,
+}
+
+#[derive(Serialize)]
+struct DiscordMessage {
+    content: String,
+}
+
+impl WebhookDiscord {
+    fn new(url: String) -> WebhookDiscord {
+        WebhookDiscord { url }
+    }
+
+    fn render_message(&self, item: &rss::Item) -> Result<String> {
+        let msg_title = match item.title() {
+            Some(t) => format!("{}\n", t.to_string()),
+            None => "".to_string(),
+        };
+        let msg_content = match item.guid() {
+            Some(g) => format!("{}{}", msg_title, g.value().to_string()),
+            None => return Err(anyhow!("got item without guid")),
+        };
+        let msg = DiscordMessage {
+            content: msg_content,
+        };
+        Ok(serde_json::to_string(&msg)?)
+    }
+}
+
+impl Webhook for WebhookDiscord {
+    fn push(&self, item: &rss::Item) -> Result<()> {
+        let msg = self.render_message(item)?;
+        reqwest::blocking::Client::new()
+            .post(&self.url)
+            .header(reqwest::header::CONTENT_TYPE, "application/json")
+            .body(msg)
+            .send()?;
+        Ok(())
     }
 }
 
