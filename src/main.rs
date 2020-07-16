@@ -1,4 +1,6 @@
-#![deny(unused, nonstandard_style, future_incompatible)]
+#![deny(future_incompatible)]
+#![deny(nonstandard_style)]
+#![deny(unused)]
 #![warn(rust_2018_idioms)]
 
 use std::sync::mpsc;
