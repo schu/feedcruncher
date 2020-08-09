@@ -17,6 +17,8 @@ use serde_json;
 #[derive(Clap, Debug)]
 #[clap(version = "0.1.0")]
 struct Opts {
+    #[clap(short, long)]
+    dry_run: bool,
     feed_urls: Vec<String>,
     #[clap(short, long, default_value = "600")]
     sleep_dur: u64,
@@ -37,7 +39,11 @@ fn main() {
         thread::spawn(move || poll(&feed, tx, time::Duration::from_secs(sleep_dur)));
     }
 
-    let webhook = WebhookDiscord::new(opts.webhook_url);
+    let webhook: dyn Webhook = if opts.dry_run {
+        WebhookNoop::new();
+    } else {
+        WebhookDiscord::new(opts.webhook_url);
+    };
 
     loop {
         println!("Waiting for new feed items ...");
@@ -122,6 +128,37 @@ impl Webhook for WebhookDiscord {
             .header(reqwest::header::CONTENT_TYPE, "application/json")
             .body(msg)
             .send()?;
+        Ok(())
+    }
+}
+
+struct WebhookNoop {}
+
+impl WebhookNoop {
+    fn new() -> WebhookNoop {
+        WebhookNoop {}
+    }
+
+    fn render_message(&self, item: &rss::Item) -> Result<String> {
+        let msg_title = match item.title() {
+            Some(t) => format!("{}\n", t.to_string()),
+            None => "".to_string(),
+        };
+        let msg_content = match item.guid() {
+            Some(g) => format!("{}{}", msg_title, g.value().to_string()),
+            None => return Err(anyhow!("got item without guid")),
+        };
+        let msg = DiscordMessage {
+            content: msg_content,
+        };
+        Ok(serde_json::to_string(&msg)?)
+    }
+}
+
+impl Webhook for WebhookNoop {
+    fn push(&self, item: &rss::Item) -> Result<()> {
+        let msg = self.render_message(item)?;
+        println!("{}", msg);
         Ok(())
     }
 }
