@@ -37,7 +37,22 @@ fn main() {
         thread::spawn(move || poll(&feed, tx, time::Duration::from_secs(sleep_dur)));
     }
 
-    let webhook = WebhookDiscord::new(opts.webhook_url);
+    fn webhook_from_url(url: String) -> Result<Box<dyn Webhook>> {
+        if url == "-" {
+            return Ok(Box::new(WebhookNoop::new()));
+        }
+        if url.contains("discordapp.com/api") {
+            return Ok(Box::new(WebhookDiscord::new(url)));
+        }
+        Err(anyhow!("unknown webhook target: '{}'", url))
+    }
+
+    let webhook = match webhook_from_url(opts.webhook_url) {
+        Ok(webhook) => webhook,
+        Err(e) => {
+            panic!("{}", e);
+        }
+    };
 
     loop {
         println!("Waiting for new feed items ...");
@@ -122,6 +137,20 @@ impl Webhook for WebhookDiscord {
             .header(reqwest::header::CONTENT_TYPE, "application/json")
             .body(msg)
             .send()?;
+        Ok(())
+    }
+}
+
+struct WebhookNoop {}
+
+impl WebhookNoop {
+    fn new() -> WebhookNoop {
+        WebhookNoop {}
+    }
+}
+
+impl Webhook for WebhookNoop {
+    fn push(&self, _item: &rss::Item) -> Result<()> {
         Ok(())
     }
 }
