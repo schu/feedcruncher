@@ -21,11 +21,13 @@ Press Return to add new feed item ...
 Start feedcruncher from second terminal:
 
 ```
-$ cargo run --bin feedcruncher -- --sleep-dur 5 --webhook-url - http://localhost:4321
-    Finished dev [unoptimized + debuginfo] target(s) in 0.13s
-     Running `target/debug/feedcruncher --sleep-dur 5 --webhook-url - 'http://localhost:4321'`
+$ cargo run --bin feedcruncher -- --config config-test.toml
+    Finished dev [unoptimized + debuginfo] target(s) in 0.14s
+     Running `target/debug/feedcruncher --config test-config.toml`
 Watching [
-    "http://localhost:4321",
+    FeedConfig {
+        url: "http://localhost:4321",
+    },
 ]
 Waiting for new feed items ...
 ```
