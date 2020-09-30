@@ -27,7 +27,7 @@ async fn index(items: web::Data<Mutex<Vec<rss::Item>>>, _req: HttpRequest) -> Ht
         .body(channel.to_string())
 }
 
-#[actix_rt::main]
+#[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let items = web::Data::new(Mutex::new(Vec::new()));
     let items_t = items.clone();
