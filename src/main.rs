@@ -54,8 +54,11 @@ fn main() {
         if url == "-" {
             return Ok(Box::new(WebhookNoop::new()));
         }
-        if url.contains("discordapp.com/api") {
+        if url.contains("https://discordapp.com/api") {
             return Ok(Box::new(WebhookDiscord::new(url)));
+        }
+        if url.contains("https://hooks.slack.com") {
+            return Ok(Box::new(WebhookSlack::new(url)));
         }
         Err(anyhow!("unknown webhook target: '{}'", url))
     }
@@ -184,6 +187,46 @@ impl WebhookDiscord {
 }
 
 impl Webhook for WebhookDiscord {
+    fn push(&self, item: &rss::Item) -> Result<()> {
+        let msg = self.render_message(item)?;
+        reqwest::blocking::Client::new()
+            .post(&self.url)
+            .header(reqwest::header::CONTENT_TYPE, "application/json")
+            .body(msg)
+            .send()?;
+        Ok(())
+    }
+}
+
+struct WebhookSlack {
+    url: String,
+}
+
+#[derive(Serialize)]
+struct SlackMessage {
+    text: String,
+}
+
+impl WebhookSlack {
+    fn new(url: String) -> WebhookSlack {
+        WebhookSlack { url }
+    }
+
+    fn render_message(&self, item: &rss::Item) -> Result<String> {
+        let msg_title = match item.title() {
+            Some(t) => format!("{}\n", t.to_string()),
+            None => "".to_string(),
+        };
+        let msg_content = match item.guid() {
+            Some(g) => format!("{}{}", msg_title, g.value().to_string()),
+            None => return Err(anyhow!("got item without guid")),
+        };
+        let msg = SlackMessage { text: msg_content };
+        Ok(serde_json::to_string(&msg)?)
+    }
+}
+
+impl Webhook for WebhookSlack {
     fn push(&self, item: &rss::Item) -> Result<()> {
         let msg = self.render_message(item)?;
         reqwest::blocking::Client::new()
