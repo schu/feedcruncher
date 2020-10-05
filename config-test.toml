@@ -1,0 +1,5 @@
+sleep_dur = 3
+webhook_url = "-"
+
+[[feeds]]
+url = "http://localhost:4321"

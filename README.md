@@ -4,8 +4,34 @@
 
 Status: work in progress
 
-feedcruncher is a small daemon to watch RSS feeds and send push notifications
-for new items.
+feedcruncher is a small daemon to watch RSS feeds and send notifications for every new item.
+Supported notification targets are Discord and Slack webhooks.
+
+## Configuration
+
+Example `feedcruncher.toml`:
+
+```
+sleep_dur: 300
+webhook_url: "https://discordapp.com/api/webhooks/..."
+
+[[feeds]]
+url = "https://schu.io/index.xml"
+
+[[feeds]]
+url = "https://blog.rust-lang.org/feed.xml"
+webhook_url = "https://hooks.slack.com/....."
+```
+
+`sleep_dur` defines the time to sleep in seconds between polling. Default: `600`
+
+`webhook_url` defines the default webhook url.
+
+## Usage
+
+```
+feedcruncher --config feedcruncher.toml
+```
 
 ## Testing
 
@@ -21,11 +47,13 @@ Press Return to add new feed item ...
 Start feedcruncher from second terminal:
 
 ```
-$ cargo run --bin feedcruncher -- --sleep-dur 5 --webhook-url - http://localhost:4321
-    Finished dev [unoptimized + debuginfo] target(s) in 0.13s
-     Running `target/debug/feedcruncher --sleep-dur 5 --webhook-url - 'http://localhost:4321'`
+$ cargo run --bin feedcruncher -- --config config-test.toml
+    Finished dev [unoptimized + debuginfo] target(s) in 0.14s
+     Running `target/debug/feedcruncher --config test-config.toml`
 Watching [
-    "http://localhost:4321",
+    FeedConfig {
+        url: "http://localhost:4321",
+    },
 ]
 Waiting for new feed items ...
 ```
