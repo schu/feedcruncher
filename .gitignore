@@ -1,2 +1,4 @@
 /target
 .DS_Store
+config*.toml
+!config-test.toml
