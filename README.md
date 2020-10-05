@@ -25,7 +25,7 @@ webhook_url = "https://hooks.slack.com/....."
 
 `sleep_dur` defines the time to sleep in seconds between polling. Default: `600`
 
-`webhook_url` defines the default webhook url.
+`webhook_url` defines the webhook url and can be set per feed as well as globally.
 
 ## Usage
 
