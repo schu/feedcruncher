@@ -5,7 +5,8 @@
 Status: work in progress
 
 feedcruncher is a small daemon to watch RSS feeds and send notifications for every new item.
-Supported notification targets are Discord and Slack webhooks.
+Supported notification targets are [Discord](https://support.discord.com/hc/en-us/articles/228383668-Intro-to-Webhooks)
+and [Slack](https://api.slack.com/messaging/webhooks) webhooks.
 
 ## Configuration
 
