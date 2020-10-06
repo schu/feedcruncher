@@ -1,5 +1,7 @@
 sleep_dur = 3
-webhook_url = "-"
+webhooks = [
+	"-"
+]
 
 [[feeds]]
 url = "http://localhost:4321"

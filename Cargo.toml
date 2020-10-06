@@ -9,7 +9,10 @@ edition = "2018"
 [dependencies]
 actix-web = "3"
 anyhow = "1.0"
+chrono = "0.4"
 clap = "3.0.0-beta.2"
+diesel = { git = "https://github.com/diesel-rs/diesel", ref = "5854495bce1de6db60a708065e97a009b5e9f669", features = ["sqlite", "r2d2"] }
+dotenv = "0.15.0"
 reqwest = { version = "0.10", features = ["blocking"] }
 rss = "1.9"
 serde = { version = "1.0", features = ["derive"] }

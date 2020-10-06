@@ -3,6 +3,8 @@
 #![deny(unused)]
 #![warn(rust_2018_idioms)]
 
+use core::fmt::Debug;
+
 use std::fs::File;
 use std::io::prelude::*;
 use std::process::exit;
@@ -11,11 +13,20 @@ use std::thread;
 use std::time;
 
 use anyhow::{anyhow, Result};
+use chrono::prelude::*;
 use clap::Clap;
+use diesel::prelude::*;
 use reqwest;
+use reqwest::StatusCode;
 use rss;
 use serde::{Deserialize, Serialize};
 use serde_json;
+
+use feedcruncher::models::{
+    Item, NewFeed, NewItem, NewNotification, NewWebhook, Notification, Webhook,
+};
+use feedcruncher::schema::{feeds, items, notifications, webhooks};
+use feedcruncher::*;
 
 #[derive(Clap, Debug)]
 #[clap(version = "0.1.0")]
@@ -25,6 +36,8 @@ struct Opts {
 }
 
 fn main() {
+    let db_conn_pool = create_db_conn_pool();
+    let db_conn = db_conn_pool.get().unwrap();
     let opts: Opts = Opts::parse();
     let (tx, rx): (mpsc::Sender<FeedItem>, mpsc::Receiver<FeedItem>) = mpsc::channel();
 
@@ -50,18 +63,7 @@ fn main() {
         thread::spawn(move || poll(&feed, tx, sleep_dur));
     }
 
-    fn webhook_from_url(url: String) -> Result<Box<dyn Webhook>> {
-        if url == "-" {
-            return Ok(Box::new(WebhookNoop::new()));
-        }
-        if url.contains("https://discordapp.com/api") || url.contains("https://discord.com/api") {
-            return Ok(Box::new(WebhookDiscord::new(url)));
-        }
-        if url.contains("https://hooks.slack.com") {
-            return Ok(Box::new(WebhookSlack::new(url)));
-        }
-        Err(anyhow!("unknown webhook target: '{}'", url))
-    }
+    thread::spawn(move || dispatch(&db_conn_pool.get().unwrap()));
 
     loop {
         println!("Waiting for new feed items ...");
@@ -72,31 +74,107 @@ fn main() {
                 continue;
             }
         };
+        println!("Received new item ...");
         println!("{:#?}", received.item);
 
-        let webhook_url = if let Some(ref url) = received.config.webhook_url {
+        let webhooks = if let Some(ref url) = received.config.webhooks {
             url.clone()
-        } else if let Some(ref url) = config.webhook_url {
+        } else if let Some(ref url) = config.webhooks {
             url.clone()
         } else {
             println!("got no webhook_url for feed {}", received.config.url);
             println!("cannot process feed item");
             continue;
         };
-        let webhook = match webhook_from_url(webhook_url) {
-            Ok(webhook) => webhook,
-            Err(e) => {
-                println!("failed to get webhook from url: {}", e,);
-                continue;
-            }
+
+        let now = Utc::now().to_string();
+        let new_feed = NewFeed {
+            url: &received.config.url,
+            last_fetched_at: &now,
         };
-        match webhook.push(&received.item) {
-            Ok(_) => (),
-            Err(e) => {
-                println!("failed to push message: {}", e);
-            }
+
+        diesel::insert_into(feeds::table)
+            .values(&new_feed)
+            .on_conflict(feeds::url)
+            .do_update()
+            .set(feeds::last_fetched_at.eq(&now))
+            .execute(&db_conn)
+            .unwrap();
+
+        let feed_id = feeds::table
+            .select(feeds::id)
+            .filter(feeds::url.eq(&received.config.url))
+            .first(&db_conn)
+            .unwrap();
+
+        let guid = received.item.guid().unwrap().value().to_string();
+        let new_item = NewItem {
+            feed: &feed_id,
+            guid: &guid,
+            link: &received.item.link().unwrap(),
+            title: &if let Some(title) = received.item.title() {
+                title
+            } else {
+                ""
+            },
+            fetched_at: &now,
         };
+
+        diesel::insert_into(items::table)
+            .values(&new_item)
+            .on_conflict(items::guid)
+            .do_nothing()
+            .execute(&db_conn)
+            .unwrap();
+
+        let item_id: i32 = items::table
+            .select(items::id)
+            .filter(items::guid.eq(&guid))
+            .first(&db_conn)
+            .unwrap();
+
+        for webhook_url in webhooks.iter() {
+            let new_webhook = NewWebhook { url: &webhook_url };
+
+            diesel::insert_into(webhooks::table)
+                .values(&new_webhook)
+                .on_conflict(webhooks::url)
+                .do_nothing()
+                .execute(&db_conn)
+                .unwrap();
+
+            let webhook_id: i32 = webhooks::table
+                .select(webhooks::id)
+                .filter(webhooks::url.eq(&webhook_url))
+                .first(&db_conn)
+                .unwrap();
+
+            let new_notification = NewNotification {
+                item: &item_id,
+                webhook: &webhook_id,
+                sent: &0,
+                sent_at: &"",
+            };
+
+            diesel::insert_into(notifications::table)
+                .values(&new_notification)
+                .execute(&db_conn)
+                .unwrap();
+        }
     }
+}
+
+fn hook_from_url(url: String) -> Result<Box<dyn Hook>> {
+    if url == "-" {
+        return Ok(Box::new(WebhookNoop::new()));
+    }
+    if url.contains("https://discordapp.com/api") || url.contains("https://discord.com/api") {
+        return Ok(Box::new(WebhookDiscord::new(url)));
+    }
+    if url.contains("https://hooks.slack.com") {
+        return Ok(Box::new(WebhookSlack::new(url)));
+    }
+    Err(anyhow!("unknown webhook target: '{}'", url))
 }
 
 fn read_config_file(path: String) -> Result<Config> {
@@ -110,13 +188,13 @@ fn read_config_file(path: String) -> Result<Config> {
 struct Config {
     feeds: Vec<FeedConfig>,
     sleep_dur: Option<u64>,
-    webhook_url: Option<String>,
+    webhooks: Option<Vec<String>>,
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 struct FeedConfig {
     url: String,
-    webhook_url: Option<String>,
+    webhooks: Option<Vec<String>>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -152,8 +230,27 @@ impl RSSFeed for FeedReqwest {
     }
 }
 
-trait Webhook {
-    fn push(&self, item: &rss::Item) -> Result<()>;
+trait Hook {
+    fn push(&self, item: &Item) -> Result<()>;
+}
+
+impl Debug for dyn Hook {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "dyn Hook")
+    }
+}
+
+fn push_message(url: &str, msg: String) -> Result<()> {
+    let response = reqwest::blocking::Client::new()
+        .post(url)
+        .header(reqwest::header::CONTENT_TYPE, "application/json")
+        .body(msg)
+        .send()?;
+    let status = response.status();
+    match status {
+        StatusCode::OK | StatusCode::NO_CONTENT => Ok(()),
+        _ => Err(anyhow!("http error: '{}'", status)),
+    }
 }
 
 struct WebhookDiscord {
@@ -170,15 +267,12 @@ impl WebhookDiscord {
         WebhookDiscord { url }
     }
 
-    fn render_message(&self, item: &rss::Item) -> Result<String> {
-        let msg_title = match item.title() {
-            Some(t) => format!("{}\n", t.to_string()),
+    fn render_message(&self, item: &Item) -> Result<String> {
+        let msg_title = match &item.title {
+            Some(t) => format!("{}\n", t),
             None => "".to_string(),
         };
-        let msg_content = match item.guid() {
-            Some(g) => format!("{}{}", msg_title, g.value().to_string()),
-            None => return Err(anyhow!("got item without guid")),
-        };
+        let msg_content = format!("{}{}", msg_title, item.guid);
         let msg = DiscordMessage {
             content: msg_content,
         };
@@ -186,15 +280,9 @@ impl WebhookDiscord {
     }
 }
 
-impl Webhook for WebhookDiscord {
-    fn push(&self, item: &rss::Item) -> Result<()> {
-        let msg = self.render_message(item)?;
-        reqwest::blocking::Client::new()
-            .post(&self.url)
-            .header(reqwest::header::CONTENT_TYPE, "application/json")
-            .body(msg)
-            .send()?;
-        Ok(())
+impl Hook for WebhookDiscord {
+    fn push(&self, item: &Item) -> Result<()> {
+        return push_message(&self.url, self.render_message(item)?);
     }
 }
 
@@ -212,29 +300,20 @@ impl WebhookSlack {
         WebhookSlack { url }
     }
 
-    fn render_message(&self, item: &rss::Item) -> Result<String> {
-        let msg_title = match item.title() {
-            Some(t) => format!("{}\n", t.to_string()),
+    fn render_message(&self, item: &Item) -> Result<String> {
+        let msg_title = match &item.title {
+            Some(t) => format!("{}\n", t),
             None => "".to_string(),
         };
-        let msg_content = match item.guid() {
-            Some(g) => format!("{}{}", msg_title, g.value().to_string()),
-            None => return Err(anyhow!("got item without guid")),
-        };
+        let msg_content = format!("{}{}", msg_title, item.guid);
         let msg = SlackMessage { text: msg_content };
         Ok(serde_json::to_string(&msg)?)
     }
 }
 
-impl Webhook for WebhookSlack {
-    fn push(&self, item: &rss::Item) -> Result<()> {
-        let msg = self.render_message(item)?;
-        reqwest::blocking::Client::new()
-            .post(&self.url)
-            .header(reqwest::header::CONTENT_TYPE, "application/json")
-            .body(msg)
-            .send()?;
-        Ok(())
+impl Hook for WebhookSlack {
+    fn push(&self, item: &Item) -> Result<()> {
+        return push_message(&self.url, self.render_message(item)?);
     }
 }
 
@@ -246,9 +325,50 @@ impl WebhookNoop {
     }
 }
 
-impl Webhook for WebhookNoop {
-    fn push(&self, _item: &rss::Item) -> Result<()> {
+impl Hook for WebhookNoop {
+    fn push(&self, _item: &Item) -> Result<()> {
         Ok(())
+    }
+}
+
+fn dispatch(db_conn: &SqliteConnection) {
+    loop {
+        println!("Dispatching notifications ...");
+
+        let unsent_notifications = notifications::table
+            .filter(notifications::sent.eq(0))
+            .load::<Notification>(db_conn)
+            .unwrap();
+
+        for unsent in unsent_notifications {
+            println!("{:#?}", unsent);
+
+            let hook: Webhook = webhooks::table.find(unsent.webhook).first(db_conn).unwrap();
+
+            let hook = hook_from_url(hook.url).unwrap();
+
+            let item: Item = items::table.find(unsent.item).first(db_conn).unwrap();
+
+            println!("item: {:#?}", item);
+
+            match hook.push(&item) {
+                Ok(_) => (),
+                Err(e) => {
+                    println!("failed to push message: {}", e);
+                    continue;
+                }
+            };
+
+            diesel::update(notifications::table.find(unsent.id))
+                .set((
+                    notifications::sent.eq(1),
+                    notifications::sent_at.eq(Utc::now().to_string()),
+                ))
+                .execute(db_conn)
+                .unwrap();
+        }
+
+        thread::sleep(time::Duration::from_secs(60));
     }
 }
 
@@ -372,9 +492,10 @@ mod tests {
         fn get_config(&self) -> FeedConfig {
             FeedConfig {
                 url: "".to_string(),
-                webhook_url: Some("".to_string()),
+                webhooks: Some(vec!["".to_string()]),
             }
         }
+
         fn get_items(&self) -> Result<Vec<rss::Item>> {
             let r = self.items.read().unwrap();
             Ok(r.clone())

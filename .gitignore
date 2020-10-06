@@ -2,3 +2,5 @@
 .DS_Store
 config*.toml
 !config-test.toml
+.env
+feedcruncher.sqlite3
