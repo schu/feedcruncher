@@ -21,7 +21,7 @@ url = "https://schu.io/index.xml"
 
 [[feeds]]
 url = "https://blog.rust-lang.org/feed.xml"
-webhook_url = "https://hooks.slack.com/....."
+webhook_url = "https://hooks.slack.com/..."
 ```
 
 `sleep_dur` defines the time to sleep in seconds between polling. Default: `600`
