@@ -54,7 +54,7 @@ fn main() {
         if url == "-" {
             return Ok(Box::new(WebhookNoop::new()));
         }
-        if url.contains("https://discordapp.com/api") {
+        if url.contains("https://discordapp.com/api") || url.contains("https://discord.com/api") {
             return Ok(Box::new(WebhookDiscord::new(url)));
         }
         if url.contains("https://hooks.slack.com") {
