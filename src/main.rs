@@ -12,6 +12,9 @@ use std::sync::mpsc;
 use std::thread;
 use std::time;
 
+#[macro_use]
+extern crate diesel_migrations;
+
 use anyhow::{anyhow, Result};
 use chrono::prelude::*;
 use clap::Clap;
@@ -35,11 +38,21 @@ struct Opts {
     config: String,
 }
 
+embed_migrations!("migrations");
+
 fn main() {
     let db_conn_pool = create_db_conn_pool();
     let db_conn = db_conn_pool.get().unwrap();
     let opts: Opts = Opts::parse();
     let (tx, rx): (mpsc::Sender<FeedItem>, mpsc::Receiver<FeedItem>) = mpsc::channel();
+
+    match embedded_migrations::run(&db_conn) {
+        Ok(_) => (),
+        Err(e) => {
+            println!("failed to run database migrations: {}", e);
+            exit(1);
+        }
+    }
 
     let config: Config = match read_config_file(opts.config) {
         Ok(s) => s,
