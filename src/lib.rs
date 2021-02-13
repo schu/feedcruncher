@@ -15,7 +15,13 @@ use dotenv::dotenv;
 pub fn create_db_conn_pool() -> Arc<Pool<ConnectionManager<SqliteConnection>>> {
     dotenv().ok();
 
-    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+    let database_url = match env::var("DATABASE_URL") {
+        Ok(u) => u,
+        Err(_) => {
+            println!("DATABASE_URL not in env - using default");
+            "feedcruncher.sqlite3".to_string()
+        }
+    };
 
     let manager = ConnectionManager::<SqliteConnection>::new(&database_url);
     let pool = Arc::new(Pool::builder().max_size(2).build(manager).unwrap());
