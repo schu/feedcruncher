@@ -8,25 +8,33 @@ feedcruncher is a small daemon to watch RSS feeds and send notifications for eve
 Supported notification targets are [Discord](https://support.discord.com/hc/en-us/articles/228383668-Intro-to-Webhooks)
 and [Slack](https://api.slack.com/messaging/webhooks) webhooks.
 
+## Requirements
+
+* libsqlite3-dev
+
 ## Configuration
 
 Example `feedcruncher.toml`:
 
 ```
 sleep_dur: 300
-webhook_url: "https://discordapp.com/api/webhooks/..."
+webhooks: [
+  "https://discordapp.com/api/webhooks/..."
+]
 
 [[feeds]]
 url = "https://schu.io/index.xml"
 
 [[feeds]]
 url = "https://blog.rust-lang.org/feed.xml"
-webhook_url = "https://hooks.slack.com/..."
+webhooks = [
+  "https://hooks.slack.com/..."
+]
 ```
 
 `sleep_dur` defines the time to sleep in seconds between polling. Default: `600`
 
-`webhook_url` defines the webhook url and can be set per feed as well as globally.
+`webhooks` defines a list of webhook urls and can be set per feed as well as globally.
 
 ## Usage
 
