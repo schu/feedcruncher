@@ -162,6 +162,21 @@ fn main() {
                 .first(&db_conn)
                 .unwrap();
 
+            match notifications::table
+                .filter(
+                    notifications::item
+                        .eq(item_id)
+                        .and(notifications::webhook.eq(webhook_id)),
+                )
+                .first::<Notification>(&db_conn)
+            {
+                Ok(_) => {
+                    // Notification already stored, nothing to do
+                    continue;
+                }
+                Err(_) => (),
+            };
+
             let new_notification = NewNotification {
                 item: &item_id,
                 webhook: &webhook_id,
