@@ -361,12 +361,14 @@ impl Hook for WebhookNoop {
 
 fn dispatch(db_conn: &SqliteConnection) {
     loop {
-        println!("Dispatching notifications ...");
-
         let unsent_notifications = notifications::table
             .filter(notifications::sent.eq(0))
             .load::<Notification>(db_conn)
             .unwrap();
+
+        if unsent_notifications.len() > 0 {
+            println!("Dispatching notifications ...");
+        }
 
         for unsent in unsent_notifications {
             println!("{:#?}", unsent);
