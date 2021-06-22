@@ -12,13 +12,11 @@ use std::sync::mpsc;
 use std::thread;
 use std::time;
 
-#[macro_use]
-extern crate diesel_migrations;
-
 use anyhow::{anyhow, Result};
 use chrono::prelude::*;
 use clap::Clap;
 use diesel::prelude::*;
+use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 use reqwest;
 use reqwest::StatusCode;
 use rss;
@@ -38,15 +36,15 @@ struct Opts {
     config: String,
 }
 
-embed_migrations!("migrations");
+const DB_MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations");
 
 fn main() {
     let db_conn_pool = create_db_conn_pool();
-    let db_conn = db_conn_pool.get().unwrap();
+    let db_conn = &mut db_conn_pool.get().unwrap();
     let opts: Opts = Opts::parse();
     let (tx, rx): (mpsc::Sender<FeedItem>, mpsc::Receiver<FeedItem>) = mpsc::channel();
 
-    match embedded_migrations::run(&db_conn) {
+    match db_conn.run_pending_migrations(DB_MIGRATIONS) {
         Ok(_) => (),
         Err(e) => {
             println!("failed to run database migrations: {}", e);
@@ -76,7 +74,7 @@ fn main() {
         thread::spawn(move || poll(&feed, tx, sleep_dur));
     }
 
-    thread::spawn(move || dispatch(&db_conn_pool.get().unwrap()));
+    thread::spawn(move || dispatch(&mut db_conn_pool.get().unwrap()));
 
     loop {
         println!("Waiting for new feed items ...");
@@ -111,13 +109,13 @@ fn main() {
             .on_conflict(feeds::url)
             .do_update()
             .set(feeds::last_fetched_at.eq(&now))
-            .execute(&db_conn)
+            .execute(db_conn)
             .unwrap();
 
         let feed_id = feeds::table
             .select(feeds::id)
             .filter(feeds::url.eq(&received.config.url))
-            .first(&db_conn)
+            .first(db_conn)
             .unwrap();
 
         let guid = received.item.guid().unwrap().value().to_string();
@@ -137,13 +135,13 @@ fn main() {
             .values(&new_item)
             .on_conflict(items::guid)
             .do_nothing()
-            .execute(&db_conn)
+            .execute(db_conn)
             .unwrap();
 
         let item_id: i32 = items::table
             .select(items::id)
             .filter(items::guid.eq(&guid))
-            .first(&db_conn)
+            .first(db_conn)
             .unwrap();
 
         for webhook_url in webhooks.iter() {
@@ -153,13 +151,13 @@ fn main() {
                 .values(&new_webhook)
                 .on_conflict(webhooks::url)
                 .do_nothing()
-                .execute(&db_conn)
+                .execute(db_conn)
                 .unwrap();
 
             let webhook_id: i32 = webhooks::table
                 .select(webhooks::id)
                 .filter(webhooks::url.eq(&webhook_url))
-                .first(&db_conn)
+                .first(db_conn)
                 .unwrap();
 
             match notifications::table
@@ -168,7 +166,7 @@ fn main() {
                         .eq(item_id)
                         .and(notifications::webhook.eq(webhook_id)),
                 )
-                .first::<Notification>(&db_conn)
+                .first::<Notification>(db_conn)
             {
                 Ok(_) => {
                     // Notification already stored, nothing to do
@@ -186,7 +184,7 @@ fn main() {
 
             diesel::insert_into(notifications::table)
                 .values(&new_notification)
-                .execute(&db_conn)
+                .execute(db_conn)
                 .unwrap();
         }
     }
@@ -359,7 +357,7 @@ impl Hook for WebhookNoop {
     }
 }
 
-fn dispatch(db_conn: &SqliteConnection) {
+fn dispatch(db_conn: &mut SqliteConnection) {
     loop {
         let unsent_notifications = notifications::table
             .filter(notifications::sent.eq(0))
