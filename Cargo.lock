@@ -640,7 +640,7 @@ dependencies = [
 [[package]]
 name = "diesel"
 version = "2.0.0"
-source = "git+https://github.com/diesel-rs/diesel#d79455dd339657ab7bce2056fcab8ac184d2d62c"
+source = "git+https://github.com/diesel-rs/diesel#5cb2c198da238bdf90d295c71d6e15c19261df04"
 dependencies = [
  "byteorder",
  "diesel_derives",
@@ -652,7 +652,7 @@ dependencies = [
 [[package]]
 name = "diesel_derives"
 version = "2.0.0"
-source = "git+https://github.com/diesel-rs/diesel#d79455dd339657ab7bce2056fcab8ac184d2d62c"
+source = "git+https://github.com/diesel-rs/diesel#5cb2c198da238bdf90d295c71d6e15c19261df04"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -661,9 +661,10 @@ dependencies = [
 
 [[package]]
 name = "diesel_migrations"
-version = "1.4.0"
-source = "git+https://github.com/diesel-rs/diesel#d79455dd339657ab7bce2056fcab8ac184d2d62c"
+version = "2.0.0"
+source = "git+https://github.com/diesel-rs/diesel#5cb2c198da238bdf90d295c71d6e15c19261df04"
 dependencies = [
+ "diesel",
  "migrations_internals",
  "migrations_macros",
 ]
@@ -1224,16 +1225,17 @@ checksum = "0ee1c47aaa256ecabcaea351eae4a9b01ef39ed810004e298d2511ed284b1525"
 
 [[package]]
 name = "migrations_internals"
-version = "1.4.1"
-source = "git+https://github.com/diesel-rs/diesel#d79455dd339657ab7bce2056fcab8ac184d2d62c"
+version = "2.0.0"
+source = "git+https://github.com/diesel-rs/diesel#5cb2c198da238bdf90d295c71d6e15c19261df04"
 dependencies = [
- "diesel",
+ "serde",
+ "toml",
 ]
 
 [[package]]
 name = "migrations_macros"
-version = "1.4.2"
-source = "git+https://github.com/diesel-rs/diesel#d79455dd339657ab7bce2056fcab8ac184d2d62c"
+version = "2.0.0"
+source = "git+https://github.com/diesel-rs/diesel#5cb2c198da238bdf90d295c71d6e15c19261df04"
 dependencies = [
  "migrations_internals",
  "proc-macro2",
