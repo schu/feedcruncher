@@ -14,7 +14,7 @@ clap = "3.0.0-beta.2"
 diesel = { git = "https://github.com/diesel-rs/diesel", ref = "4c51ac02b9c3b94990fb985453b93c3ce84650d7", features = ["sqlite", "r2d2"] }
 diesel_migrations = { git = "https://github.com/diesel-rs/diesel", ref = "4c51ac02b9c3b94990fb985453b93c3ce84650d7", features = ["sqlite"] }
 dotenv = "0.15.0"
-reqwest = { version = "0.10", features = ["blocking"] }
+reqwest = { version = "0.11", features = ["blocking"] }
 rss = "1.9"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
