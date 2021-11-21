@@ -14,7 +14,7 @@ use std::time;
 
 use anyhow::{anyhow, Result};
 use chrono::prelude::*;
-use clap::Clap;
+use clap::Parser;
 use diesel::prelude::*;
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 use reqwest;
@@ -29,7 +29,7 @@ use feedcruncher::models::{
 use feedcruncher::schema::{feeds, items, notifications, webhooks};
 use feedcruncher::*;
 
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 #[clap(version = "0.1.0")]
 struct Opts {
     #[clap(short, long)]
