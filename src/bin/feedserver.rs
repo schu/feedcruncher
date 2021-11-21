@@ -18,8 +18,7 @@ async fn index(items: web::Data<Mutex<Vec<rss::Item>>>, _req: HttpRequest) -> Ht
             .title("feedserver")
             .link("http://localhost:4321")
             .items(items)
-            .build()
-            .unwrap(),
+            .build(),
     );
 
     HttpResponse::Ok()
@@ -48,7 +47,7 @@ async fn main() -> std::io::Result<()> {
         let mut guid = Guid::default();
         guid.set_value(uuid.to_string());
 
-        let mut item = ItemBuilder::default().title(s).guid(guid).build().unwrap();
+        let mut item = ItemBuilder::default().title(s).guid(guid).build();
         item.set_link(format!("http://localhost:4321/?guid={}", uuid));
 
         items_t.lock().unwrap().insert(0, item);

@@ -15,7 +15,7 @@ diesel = { git = "https://github.com/diesel-rs/diesel", ref = "a51ebbd712afea121
 diesel_migrations = { git = "https://github.com/diesel-rs/diesel", ref = "a51ebbd712afea1218b3ff417a24509ebab3674a", features = ["sqlite"] }
 dotenv = "0.15.0"
 reqwest = { version = "0.11", features = ["blocking"] }
-rss = "1.10"
+rss = "2.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 uuid = { version = "0.8", features = ["v4"] }
