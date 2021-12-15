@@ -9,7 +9,7 @@ pub struct Feed {
 }
 
 #[derive(Insertable)]
-#[table_name = "feeds"]
+#[diesel(table_name = feeds)]
 pub struct NewFeed<'a> {
     pub url: &'a str,
     pub last_fetched_at: &'a str,
@@ -26,7 +26,7 @@ pub struct Item {
 }
 
 #[derive(Insertable)]
-#[table_name = "items"]
+#[diesel(table_name = items)]
 pub struct NewItem<'a> {
     pub guid: &'a str,
     pub link: &'a str,
@@ -42,7 +42,7 @@ pub struct Webhook {
 }
 
 #[derive(Insertable)]
-#[table_name = "webhooks"]
+#[diesel(table_name = webhooks)]
 pub struct NewWebhook<'a> {
     pub url: &'a str,
 }
@@ -57,7 +57,7 @@ pub struct Notification {
 }
 
 #[derive(Insertable)]
-#[table_name = "notifications"]
+#[diesel(table_name = notifications)]
 pub struct NewNotification<'a> {
     pub item: &'a i32,
     pub webhook: &'a i32,
