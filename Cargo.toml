@@ -11,8 +11,8 @@ actix-web = "3"
 anyhow = "1.0"
 chrono = "0.4"
 clap = { version = "3.0.0-beta.5", features = ["derive"]}
-diesel = { git = "https://github.com/diesel-rs/diesel", ref = "a51ebbd712afea1218b3ff417a24509ebab3674a", features = ["sqlite", "r2d2"] }
-diesel_migrations = { git = "https://github.com/diesel-rs/diesel", ref = "a51ebbd712afea1218b3ff417a24509ebab3674a", features = ["sqlite"] }
+diesel = { git = "https://github.com/diesel-rs/diesel", rev = "c2b4b62c332fbdf2d0a738632bdc65dbe7119740", features = ["sqlite", "r2d2"] }
+diesel_migrations = { git = "https://github.com/diesel-rs/diesel", rev = "c2b4b62c332fbdf2d0a738632bdc65dbe7119740", features = ["sqlite"] }
 dotenv = "0.15.0"
 reqwest = { version = "0.11", features = ["blocking"] }
 rss = "2.0"
