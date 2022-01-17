@@ -10,7 +10,7 @@ edition = "2018"
 actix-web = "3"
 anyhow = "1.0"
 chrono = "0.4"
-clap = { version = "3.0.0-beta.5", features = ["derive"]}
+clap = { version = "3.0.8", features = ["derive"]}
 diesel = { git = "https://github.com/diesel-rs/diesel", rev = "c2b4b62c332fbdf2d0a738632bdc65dbe7119740", features = ["sqlite", "r2d2"] }
 diesel_migrations = { git = "https://github.com/diesel-rs/diesel", rev = "c2b4b62c332fbdf2d0a738632bdc65dbe7119740", features = ["sqlite"] }
 dotenv = "0.15.0"
