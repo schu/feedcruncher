@@ -26,10 +26,12 @@ pub fn create_db_conn_pool() -> Arc<Pool<ConnectionManager<SqliteConnection>>> {
     let manager = ConnectionManager::<SqliteConnection>::new(&database_url);
     let pool = Arc::new(Pool::builder().max_size(2).build(manager).unwrap());
 
-    let mut db_conn = pool.get().unwrap();
+    let db_conn = &mut pool.get().unwrap();
 
     // Enable sqlite foreign key support
-    db_conn.execute("PRAGMA foreign_keys = on").unwrap();
+    diesel::sql_query("PRAGMA foreign_keys = on")
+        .execute(db_conn)
+        .unwrap();
     drop(db_conn);
 
     pool
