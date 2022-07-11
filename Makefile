@@ -12,3 +12,11 @@ lint:
 .PHONY: test
 test:
 	cargo test
+
+.PHONY: run
+run:
+	cargo run --bin feedcruncher -- --config config-test.toml
+
+.PHONY: run-server
+run-server:
+	cargo run --bin feedserver

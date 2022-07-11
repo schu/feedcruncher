@@ -47,7 +47,7 @@ feedcruncher --config feedcruncher.toml
 Start feedserver from first terminal:
 
 ```
-$ cargo run --bin feedserver
+$ make run-server
     Finished dev [unoptimized + debuginfo] target(s) in 0.13s
      Running `target/debug/feedserver`
 Press Return to add new feed item ...
@@ -56,7 +56,7 @@ Press Return to add new feed item ...
 Start feedcruncher from second terminal:
 
 ```
-$ cargo run --bin feedcruncher -- --config config-test.toml
+$ make run
     Finished dev [unoptimized + debuginfo] target(s) in 0.14s
      Running `target/debug/feedcruncher --config config-test.toml`
 Watching [
