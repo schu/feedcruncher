@@ -8,6 +8,7 @@ build:
 .PHONY: lint
 lint:
 	cargo fmt -- --check
+	cargo clippy
 
 .PHONY: test
 test:
