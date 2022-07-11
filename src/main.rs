@@ -159,20 +159,18 @@ fn main() {
                 .first(db_conn)
                 .unwrap();
 
-            match notifications::table
+            if notifications::table
                 .filter(
                     notifications::item
                         .eq(item_id)
                         .and(notifications::webhook.eq(webhook_id)),
                 )
                 .first::<Notification>(db_conn)
+                .is_ok()
             {
-                Ok(_) => {
-                    // Notification already stored, nothing to do
-                    continue;
-                }
-                Err(_) => (),
-            };
+                // Notification already stored, nothing to do
+                continue;
+            }
 
             let new_notification = NewNotification {
                 item: &item_id,
@@ -399,13 +397,10 @@ fn dispatch(db_conn: &mut SqliteConnection) {
     }
 }
 
-fn guids_from_items(items: &Vec<rss::Item>) -> Vec<String> {
+fn guids_from_items(items: &[rss::Item]) -> Vec<String> {
     items
         .iter()
-        .filter(|item| match item.guid() {
-            Some(_) => true,
-            None => false,
-        })
+        .filter(|item| item.guid().is_some())
         .map(|item| match item.guid() {
             Some(guid) => guid.value().to_string(),
             None => panic!("cannot happen"),
