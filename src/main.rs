@@ -17,11 +17,10 @@ use chrono::prelude::*;
 use clap::Parser;
 use diesel::prelude::*;
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
-use reqwest;
+
 use reqwest::StatusCode;
-use rss;
+
 use serde::{Deserialize, Serialize};
-use serde_json;
 
 use feedcruncher::models::{
     Item, NewFeed, NewItem, NewNotification, NewWebhook, Notification, Webhook,
@@ -122,8 +121,8 @@ fn main() {
         let new_item = NewItem {
             feed: &feed_id,
             guid: &guid,
-            link: &received.item.link().unwrap(),
-            title: &if let Some(title) = received.item.title() {
+            link: received.item.link().unwrap(),
+            title: if let Some(title) = received.item.title() {
                 title
             } else {
                 ""
@@ -145,7 +144,7 @@ fn main() {
             .unwrap();
 
         for webhook_url in webhooks.iter() {
-            let new_webhook = NewWebhook { url: &webhook_url };
+            let new_webhook = NewWebhook { url: webhook_url };
 
             diesel::insert_into(webhooks::table)
                 .values(&new_webhook)
@@ -160,26 +159,24 @@ fn main() {
                 .first(db_conn)
                 .unwrap();
 
-            match notifications::table
+            if notifications::table
                 .filter(
                     notifications::item
                         .eq(item_id)
                         .and(notifications::webhook.eq(webhook_id)),
                 )
                 .first::<Notification>(db_conn)
+                .is_ok()
             {
-                Ok(_) => {
-                    // Notification already stored, nothing to do
-                    continue;
-                }
-                Err(_) => (),
-            };
+                // Notification already stored, nothing to do
+                continue;
+            }
 
             let new_notification = NewNotification {
                 item: &item_id,
                 webhook: &webhook_id,
                 sent: &0,
-                sent_at: &"",
+                sent_at: "",
             };
 
             diesel::insert_into(notifications::table)
@@ -308,7 +305,7 @@ impl WebhookDiscord {
 
 impl Hook for WebhookDiscord {
     fn push(&self, item: &Item) -> Result<()> {
-        return push_message(&self.url, self.render_message(item)?);
+        push_message(&self.url, self.render_message(item)?)
     }
 }
 
@@ -339,7 +336,7 @@ impl WebhookSlack {
 
 impl Hook for WebhookSlack {
     fn push(&self, item: &Item) -> Result<()> {
-        return push_message(&self.url, self.render_message(item)?);
+        push_message(&self.url, self.render_message(item)?)
     }
 }
 
@@ -364,7 +361,7 @@ fn dispatch(db_conn: &mut SqliteConnection) {
             .load::<Notification>(db_conn)
             .unwrap();
 
-        if unsent_notifications.len() > 0 {
+        if !unsent_notifications.is_empty() {
             println!("Dispatching notifications ...");
         }
 
@@ -400,13 +397,10 @@ fn dispatch(db_conn: &mut SqliteConnection) {
     }
 }
 
-fn guids_from_items(items: &Vec<rss::Item>) -> Vec<String> {
+fn guids_from_items(items: &[rss::Item]) -> Vec<String> {
     items
         .iter()
-        .filter(|item| match item.guid() {
-            Some(_) => true,
-            None => false,
-        })
+        .filter(|item| item.guid().is_some())
         .map(|item| match item.guid() {
             Some(guid) => guid.value().to_string(),
             None => panic!("cannot happen"),
@@ -435,11 +429,7 @@ fn poll(feed: &impl RSSFeed, tx: mpsc::Sender<FeedItem>, sleep_dur: time::Durati
             .filter(|item| match item.guid() {
                 Some(guid) => {
                     let guid_val = guid.value().to_string();
-                    if feed_guids.contains(&guid_val) || guid_val.is_empty() {
-                        false
-                    } else {
-                        true
-                    }
+                    !(feed_guids.contains(&guid_val) || guid_val.is_empty())
                 }
                 None => false,
             })
@@ -451,7 +441,7 @@ fn poll(feed: &impl RSSFeed, tx: mpsc::Sender<FeedItem>, sleep_dur: time::Durati
             let guid = item.guid().unwrap().value().to_string();
             let feed_item = FeedItem {
                 config: feed.get_config(),
-                item: item,
+                item,
             };
             match tx.send(feed_item) {
                 Ok(_) => {
