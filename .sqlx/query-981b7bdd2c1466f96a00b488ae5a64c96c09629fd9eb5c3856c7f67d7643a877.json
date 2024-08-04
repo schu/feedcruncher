@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            UPDATE feeds\n            SET is_new = ?\n            WHERE id = ?\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "981b7bdd2c1466f96a00b488ae5a64c96c09629fd9eb5c3856c7f67d7643a877"
+}

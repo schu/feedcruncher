@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            INSERT INTO webhooks (url)\n            VALUES (?)\n            ON CONFLICT (url) DO NOTHING\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "97f3aa2400be01640153457572b79c681ac9e822f93c5a5f888b41016700ec5b"
+}
