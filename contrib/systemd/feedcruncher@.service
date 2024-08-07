@@ -1,0 +1,27 @@
+[Unit]
+Description=feedcrucher
+After=network-online.target
+Wants=network-online.target systemd-networkd-wait-online.service
+
+[Service]
+Restart=on-failure
+
+ExecStart=/usr/local/bin/feedcruncher --config "%h/feedcruncher-%i.toml"
+
+User=feedcruncher
+Group=feedcruncher
+
+WorkingDirectory=%h
+
+NoNewPrivileges=true
+ProtectHome=true
+ProtectSystem=strict
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+PrivateTmp=true
+PrivateDevices=true
+LockPersonality=true
+
+[Install]
+WantedBy=multi-user.target
