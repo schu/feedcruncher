@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            SELECT feed_item_id, webhook_id\n            FROM notifications\n            WHERE sent = false\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "feed_item_id",
+        "ordinal": 0,
+        "type_info": "Int64"
+      },
+      {
+        "name": "webhook_id",
+        "ordinal": 1,
+        "type_info": "Int64"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "0a1a941b6dbc25bbeb39c10c1cd519cfd0dd6d3e47de5fa0aea4953a4b37c759"
+}

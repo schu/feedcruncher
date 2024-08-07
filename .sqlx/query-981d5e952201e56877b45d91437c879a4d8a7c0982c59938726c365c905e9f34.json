@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            UPDATE notifications\n            SET sent = true, sent_at = CURRENT_TIMESTAMP\n            WHERE feed_item_id = ? AND webhook_id = ?\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "981d5e952201e56877b45d91437c879a4d8a7c0982c59938726c365c905e9f34"
+}

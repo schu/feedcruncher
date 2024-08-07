@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            SELECT guid, link, title, published_at\n            FROM feed_items\n            WHERE id = ?\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "guid",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "link",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "title",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "published_at",
+        "ordinal": 3,
+        "type_info": "Datetime"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "a794d0c083f4972a37e4246e587fe281dcc26557c0ac53ef5750b03775c815a9"
+}

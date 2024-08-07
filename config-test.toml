@@ -1,7 +1,23 @@
-sleep_dur = 3
-webhooks = [
+poll = false
+poll_sleep_dur = 3
+webhook_urls = [
 	"-"
 ]
 
 [[feeds]]
 url = "http://localhost:4321"
+kind = "rss"
+
+[[feeds]]
+url = "http://www.schu.io/index.xml"
+kind = "rss"
+
+# Rust blog
+[[feeds]]
+url = "https://blog.rust-lang.org/feed.xml"
+kind = "atom"
+
+# Rust YouTube channel
+[[feeds]]
+url = "https://www.youtube.com/feeds/videos.xml?channel_id=UCaYhcUwRBNscFNUKTjgPFiA"
+kind = "atom"

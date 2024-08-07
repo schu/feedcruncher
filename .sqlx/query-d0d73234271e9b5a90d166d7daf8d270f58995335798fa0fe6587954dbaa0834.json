@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            SELECT is_new\n            FROM feeds\n            WHERE id = ?\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "is_new",
+        "ordinal": 0,
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "d0d73234271e9b5a90d166d7daf8d270f58995335798fa0fe6587954dbaa0834"
+}

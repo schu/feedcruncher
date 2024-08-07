@@ -3,5 +3,5 @@
 config*.toml
 !config-test.toml
 .env
-feedcruncher.sqlite3
+feedcruncher.sqlite3*
 .*.sw[po]

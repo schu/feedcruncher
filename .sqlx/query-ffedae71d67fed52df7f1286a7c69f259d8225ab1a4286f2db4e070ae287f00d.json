@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            INSERT INTO notifications (feed_item_id, webhook_id, sent)\n            VALUES (?, ?, ?)\n            ON CONFLICT (feed_item_id, webhook_id) DO NOTHING\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "ffedae71d67fed52df7f1286a7c69f259d8225ab1a4286f2db4e070ae287f00d"
+}

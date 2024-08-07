@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            INSERT INTO feeds (kind, url, is_new)\n            VALUES (?, ?, true)\n            ON CONFLICT (url) DO NOTHING\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "63a5a7503038002a7892aebf4f5bb7e7cc57b3402951a9ac317694aee471916c"
+}
