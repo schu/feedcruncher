@@ -6,6 +6,7 @@ use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
 pub struct Config {
+    pub db_path: Option<String>,
     pub feeds: Vec<FeedConfig>,
     pub poll: Option<bool>,
     pub poll_sleep_dur: Option<u64>,

@@ -59,7 +59,13 @@ async fn main() -> Result<()> {
         tokio::time::Duration::from_secs(600)
     };
 
-    let db = get_db_pool().await?;
+    let db_path = if let Some(p) = config.db_path {
+        p
+    } else {
+        "sqlite://./feedcruncher.sqlite3".to_string()
+    };
+
+    let db = get_db_pool(&db_path).await?;
 
     // Create list of feed objects
     let feeds = config.feeds.iter().map(|f| {

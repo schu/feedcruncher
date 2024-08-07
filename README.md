@@ -25,6 +25,11 @@ poll = true
 # (optional)
 poll_sleep_dur = 600
 
+# `db_path` can be used to set a custom database path, the default is
+# `sqlite://./feedcruncher.sqlite3`
+# (optional)
+db_path = "sqlite://./feedcruncher.sqlite3"
+
 # `webhook_urls` defines a list of webhook urls and can be set per
 # feed as well as globally. `-` can be set to make feedcruncher print
 # feed items to stdout.
