@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "\n            SELECT guid, link, title, published_at\n            FROM feed_items\n            WHERE id = ?\n            ",
+  "query": "\n            SELECT guid, link, title, published_at AS \"published_at: String\"\n            FROM feed_items\n            WHERE id = ?\n            ",
   "describe": {
     "columns": [
       {
@@ -19,7 +19,7 @@
         "type_info": "Text"
       },
       {
-        "name": "published_at",
+        "name": "published_at: String",
         "ordinal": 3,
         "type_info": "Datetime"
       }
@@ -34,5 +34,5 @@
       true
     ]
   },
-  "hash": "a794d0c083f4972a37e4246e587fe281dcc26557c0ac53ef5750b03775c815a9"
+  "hash": "fb7ab3d9032b0b252d67b79bebfc65ec306ccd38ff668c3dd1245ec956e09ae3"
 }

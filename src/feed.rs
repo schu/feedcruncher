@@ -276,7 +276,7 @@ impl FeedItems {
     pub async fn get(db: &Pool<Sqlite>, id: i64) -> Result<FeedItem> {
         let result = sqlx::query!(
             r#"
-            SELECT guid, link, title, published_at
+            SELECT guid, link, title, published_at AS "published_at: String"
             FROM feed_items
             WHERE id = ?
             "#,
@@ -293,7 +293,7 @@ impl FeedItems {
             guid: result.guid,
             link: result.link,
             title: result.title,
-            published_at: result.published_at.map(|dt| dt.to_string()),
+            published_at: result.published_at,
         })
     }
 }
