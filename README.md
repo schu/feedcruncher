@@ -87,7 +87,12 @@ cargo sqlx prepare
 Run the test feedserver from one terminal:
 
 ```
-$ make run-server
+make run-server
+```
+
+To add a new item, type a title and press `Return`.
+
+```
     Finished dev [unoptimized + debuginfo] target(s) in 0.13s
      Running `target/debug/feedserver`
 Press Return to add new feed item ...
@@ -96,7 +101,10 @@ Press Return to add new feed item ...
 Run feedcruncher from a second terminal:
 
 ```
-$ make run
+make run
+```
+
+```
     Finished dev [unoptimized + debuginfo] target(s) in 0.14s
      Running `target/debug/feedcruncher --config config-test.toml`
 Watching [
