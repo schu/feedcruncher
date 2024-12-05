@@ -2,7 +2,7 @@ use core::fmt::Debug;
 use std::fmt;
 use std::sync::Arc;
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use sqlx::{Pool, Sqlite};
 use tokio::sync::Mutex;
@@ -195,7 +195,16 @@ impl Feed for AtomFeed {
 
     async fn fetch(&self) -> Result<Vec<FeedItem>> {
         let response = reqwest::get(&self.url).await?.text().await?;
-        let atomfeed = atom_syndication::Feed::read_from(response.as_bytes())?;
+        let atomfeed = match atom_syndication::Feed::read_from(response.as_bytes()) {
+            Ok(feed) => feed,
+            Err(e) => {
+                return Err(anyhow!(
+                    "failed to parse atom feed from '{}': {}",
+                    self.url,
+                    e
+                ));
+            }
+        };
 
         let feed: Arc<Mutex<Box<dyn Feed>>> =
             Arc::new(Mutex::new(Box::new(self.clone()) as Box<dyn Feed>));
