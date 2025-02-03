@@ -7,7 +7,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-async-trait = "0.1.77"
+async-trait = "0.1.86"
 atom_syndication = "0.12"
 tokio = { version = "1.0", features = ["full"] }
 sqlx = { version = "0.8", features = ["sqlite", "runtime-tokio", "tls-rustls", "chrono"] }
