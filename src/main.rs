@@ -51,7 +51,7 @@ async fn main() -> Result<()> {
 
     println!("config: {:#?}", config);
 
-    let poll = if let Some(p) = config.poll { p } else { true };
+    let poll = config.poll.unwrap_or(true);
 
     let poll_sleep_dur = if let Some(d) = config.poll_sleep_dur {
         tokio::time::Duration::from_secs(d)
