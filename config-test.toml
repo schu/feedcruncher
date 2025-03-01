@@ -4,6 +4,8 @@ webhook_urls = [
 	"-"
 ]
 
+db_path = "test.sqlite3"
+
 [[feeds]]
 url = "http://localhost:4321"
 kind = "rss"
