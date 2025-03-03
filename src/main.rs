@@ -51,7 +51,7 @@ async fn main() -> Result<()> {
 
     println!("config: {:#?}", config);
 
-    let poll = if let Some(p) = config.poll { p } else { true };
+    let poll = config.poll.unwrap_or(true);
 
     let poll_sleep_dur = if let Some(d) = config.poll_sleep_dur {
         tokio::time::Duration::from_secs(d)
@@ -90,7 +90,17 @@ async fn main() -> Result<()> {
         set.spawn(async move { feed.lock().await.save().await });
     }
     while let Some(res) = set.join_next().await {
-        let _ = res?;
+        match res {
+            Ok(Ok(_)) => (),
+            Ok(Err(e)) => {
+                println!("failed to save feed: {}", e);
+                exit(1);
+            }
+            Err(e) => {
+                println!("failed to join saving feeds: {}", e);
+                exit(1);
+            }
+        }
     }
     assert!(set.is_empty());
 
@@ -105,13 +115,15 @@ async fn main() -> Result<()> {
         // Collect feed items from feeds
         let mut items: Vec<FeedItem> = vec![];
         while let Some(res) = set.join_next().await {
-            let fetched_items = match res
-                .unwrap_or_else(|e| Err(anyhow!("failed to join fetching feeds: {}", e)))
-            {
-                Ok(i) => i,
-                Err(e) => {
+            let fetched_items = match res {
+                Ok(Ok(items)) => items,
+                Ok(Err(e)) => {
                     println!("failed to fetch feed: {}", e);
                     continue;
+                }
+                Err(e) => {
+                    println!("failed to join fetching feeds: {}", e);
+                    exit(1);
                 }
             };
             items.extend(fetched_items);
@@ -207,7 +219,18 @@ async fn main() -> Result<()> {
             });
         }
         while let Some(res) = set.join_next().await {
-            res.unwrap_or_else(|e| Err(anyhow!("failed to join saving items: {}", e)))?;
+            match res {
+                Ok(Ok(_)) => (),
+                Ok(Err(e)) => {
+                    println!("failed to save item: {}", e);
+                    // This could happen if the feed item has a duplicate guid;
+                    // we don't want to exit in this case and ignore this for now
+                }
+                Err(e) => {
+                    println!("failed to join saving items: {}", e);
+                    exit(1);
+                }
+            }
         }
         assert!(set.is_empty());
 
@@ -216,7 +239,16 @@ async fn main() -> Result<()> {
             set.spawn(async move { feed.lock().await.set_is_new(false).await });
         }
         while let Some(res) = set.join_next().await {
-            res.unwrap_or_else(|e| Err(anyhow!("failed to set `feeds.is_new` to false: {}", e)))?;
+            match res {
+                Ok(Ok(_)) => (),
+                Ok(Err(e)) => {
+                    println!("failed to set `feed.is_new` to false: {}", e);
+                }
+                Err(e) => {
+                    println!("failed to join setting `feed.is_new`: {}", e);
+                    exit(1);
+                }
+            }
         }
         assert!(set.is_empty());
 
@@ -230,7 +262,16 @@ async fn main() -> Result<()> {
             set.spawn(async move { notification.send(&db).await });
         }
         while let Some(res) = set.join_next().await {
-            let _ = res?;
+            match res {
+                Ok(Ok(_)) => (),
+                Ok(Err(e)) => {
+                    println!("failed to send notification: {}", e);
+                }
+                Err(e) => {
+                    println!("failed to join sending notifications: {}", e);
+                    exit(1);
+                }
+            }
         }
         assert!(set.is_empty());
 
