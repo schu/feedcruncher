@@ -40,7 +40,9 @@ impl Webhook for WebhookDiscord {
     async fn push(&self, item: FeedItem) -> Result<()> {
         let message = self.render_message(&item)?;
 
-        let client = reqwest::Client::new();
+        let client = reqwest::Client::builder()
+            .timeout(std::time::Duration::from_secs(15))
+            .build()?;
         client
             .post(&self.url)
             .header(reqwest::header::CONTENT_TYPE, "application/json")
@@ -109,7 +111,9 @@ impl Webhook for WebhookSlack {
     async fn push(&self, item: FeedItem) -> Result<()> {
         let message = self.render_message(&item)?;
 
-        let client = reqwest::Client::new();
+        let client = reqwest::Client::builder()
+            .timeout(std::time::Duration::from_secs(15))
+            .build()?;
         client
             .post(&self.url)
             .header(reqwest::header::CONTENT_TYPE, "application/json")

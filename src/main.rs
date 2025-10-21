@@ -190,14 +190,20 @@ async fn main() -> Result<()> {
 
                     // We don't want to send notifications for items
                     // if a feed was just added ...
-                    let sent = match item.feed.lock().await.is_new().await {
-                        Ok(is_new) => is_new,
-                        Err(e) => {
-                            return Err(anyhow!(
-                                "failed to check if feed is new '{}': {}",
-                                item.feed.lock().await.url(),
-                                e
-                            ));
+                    let sent = {
+                        let res = {
+                            let feed = item.feed.lock().await;
+                            feed.is_new().await
+                        };
+                        match res {
+                            Ok(is_new) => is_new,
+                            Err(e) => {
+                                return Err(anyhow!(
+                                    "failed to check if feed is new '{}': {}",
+                                    item.feed.lock().await.url(),
+                                    e
+                                ));
+                            }
                         }
                     };
 
