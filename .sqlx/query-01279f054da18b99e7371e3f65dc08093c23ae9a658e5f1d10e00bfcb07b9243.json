@@ -1,26 +1,31 @@
 {
   "db_name": "SQLite",
-  "query": "\n            SELECT guid, link, title, published_at AS \"published_at: String\"\n            FROM feed_items\n            WHERE id = ?\n            ",
+  "query": "\n            SELECT feed_id, guid, link, title, published_at AS \"published_at: String\"\n            FROM feed_items\n            WHERE id = ?\n            ",
   "describe": {
     "columns": [
       {
-        "name": "guid",
+        "name": "feed_id",
         "ordinal": 0,
-        "type_info": "Text"
+        "type_info": "Integer"
       },
       {
-        "name": "link",
+        "name": "guid",
         "ordinal": 1,
         "type_info": "Text"
       },
       {
-        "name": "title",
+        "name": "link",
         "ordinal": 2,
         "type_info": "Text"
       },
       {
-        "name": "published_at: String",
+        "name": "title",
         "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "published_at: String",
+        "ordinal": 4,
         "type_info": "Datetime"
       }
     ],
@@ -30,9 +35,10 @@
     "nullable": [
       false,
       false,
+      false,
       true,
       true
     ]
   },
-  "hash": "fb7ab3d9032b0b252d67b79bebfc65ec306ccd38ff668c3dd1245ec956e09ae3"
+  "hash": "01279f054da18b99e7371e3f65dc08093c23ae9a658e5f1d10e00bfcb07b9243"
 }

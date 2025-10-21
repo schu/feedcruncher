@@ -140,6 +140,11 @@ impl Feed for RSSFeed {
         let feed: Arc<Mutex<Box<dyn Feed>>> =
             Arc::new(Mutex::new(Box::new(self.clone()) as Box<dyn Feed>));
 
+        let feed_id = {
+            let feed_guard = feed.lock().await;
+            feed_guard.id().await?
+        };
+
         let items = rssfeed
             .into_items()
             .iter()
@@ -147,6 +152,7 @@ impl Feed for RSSFeed {
                 FeedItem {
                     db: self.db.clone(),
                     feed: feed.clone(),
+                    feed_id,
                     // TODO: what if we receive malformed data w/o guid or link?
                     // Is there a better way (w/o unwrap) to handle this?
                     guid: item.guid().unwrap().value().to_string(),
@@ -215,12 +221,18 @@ impl Feed for AtomFeed {
         let feed: Arc<Mutex<Box<dyn Feed>>> =
             Arc::new(Mutex::new(Box::new(self.clone()) as Box<dyn Feed>));
 
+        let feed_id = {
+            let feed_guard = feed.lock().await;
+            feed_guard.id().await?
+        };
+
         let items: Vec<FeedItem> = atomfeed
             .entries()
             .iter()
             .map(|entry| FeedItem {
                 db: self.db.clone(),
                 feed: feed.clone(),
+                feed_id,
                 guid: entry.id().to_string(),
                 link: entry.links().first().unwrap().href().to_string(),
                 title: Some(entry.title.value.clone()),
@@ -235,6 +247,7 @@ impl Feed for AtomFeed {
 pub struct FeedItem {
     pub db: Pool<Sqlite>,
     pub feed: Arc<Mutex<Box<dyn Feed>>>,
+    pub feed_id: i64,
     pub guid: String,
     pub link: String,
     pub title: Option<String>,
@@ -249,15 +262,13 @@ impl Debug for FeedItem {
 
 impl FeedItem {
     pub async fn save(&self) -> Result<()> {
-        let feed_id = self.feed.lock().await.id().await?;
-
         sqlx::query!(
             r#"
             INSERT INTO feed_items (feed_id, guid, link, title, published_at)
             VALUES (?, ?, ?, ?, ?)
             ON CONFLICT (guid, link) DO NOTHING
             "#,
-            feed_id,
+            self.feed_id,
             self.guid,
             self.link,
             self.title,
@@ -291,7 +302,7 @@ impl FeedItems {
     pub async fn get(db: &Pool<Sqlite>, id: i64) -> Result<FeedItem> {
         let result = sqlx::query!(
             r#"
-            SELECT guid, link, title, published_at AS "published_at: String"
+            SELECT feed_id, guid, link, title, published_at AS "published_at: String"
             FROM feed_items
             WHERE id = ?
             "#,
@@ -305,6 +316,7 @@ impl FeedItems {
             feed: Arc::new(Mutex::new(
                 Box::new(RSSFeed::new("".to_string(), None, db)?) as Box<dyn Feed>,
             )),
+            feed_id: result.feed_id,
             guid: result.guid,
             link: result.link,
             title: result.title,
