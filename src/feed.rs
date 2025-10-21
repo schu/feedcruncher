@@ -131,7 +131,10 @@ impl Feed for RSSFeed {
     }
 
     async fn fetch(&self) -> Result<Vec<FeedItem>> {
-        let response = reqwest::get(&self.url).await?.text().await?;
+        let client = reqwest::Client::builder()
+            .timeout(std::time::Duration::from_secs(15))
+            .build()?;
+        let response = client.get(&self.url).send().await?.text().await?;
         let rssfeed = rss::Channel::read_from(response.as_bytes())?;
 
         let feed: Arc<Mutex<Box<dyn Feed>>> =
@@ -194,7 +197,10 @@ impl Feed for AtomFeed {
     }
 
     async fn fetch(&self) -> Result<Vec<FeedItem>> {
-        let response = reqwest::get(&self.url).await?.text().await?;
+        let client = reqwest::Client::builder()
+            .timeout(std::time::Duration::from_secs(15))
+            .build()?;
+        let response = client.get(&self.url).send().await?.text().await?;
         let atomfeed = match atom_syndication::Feed::read_from(response.as_bytes()) {
             Ok(feed) => feed,
             Err(e) => {
