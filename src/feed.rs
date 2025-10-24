@@ -2,7 +2,7 @@ use core::fmt::Debug;
 use std::fmt;
 use std::sync::Arc;
 
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 use async_trait::async_trait;
 use sqlx::{Pool, Sqlite};
 use tokio::sync::Mutex;
@@ -275,7 +275,8 @@ impl FeedItem {
             self.published_at,
         )
         .execute(&self.db)
-        .await?;
+        .await
+        .with_context(|| format!("guid: '{}' link: '{}'", self.guid, self.link))?;
 
         Ok(())
     }

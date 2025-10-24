@@ -140,7 +140,7 @@ async fn main() -> Result<()> {
                 match item.save().await {
                     Ok(_) => (),
                     Err(e) => {
-                        return Err(anyhow!("failed to save item '{}': {}", item.guid, e));
+                        return Err(anyhow!("failed to save item: {:?}", e));
                     }
                 };
 
@@ -228,7 +228,7 @@ async fn main() -> Result<()> {
             match res {
                 Ok(Ok(_)) => (),
                 Ok(Err(e)) => {
-                    println!("failed to save item: {}", e);
+                    println!("{}", e);
                     // This could happen if the feed item has a duplicate guid;
                     // we don't want to exit in this case and ignore this for now
                 }
