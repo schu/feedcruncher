@@ -135,7 +135,8 @@ impl Feed for RSSFeed {
             .timeout(std::time::Duration::from_secs(15))
             .build()?;
         let response = client.get(&self.url).send().await?.text().await?;
-        let rssfeed = rss::Channel::read_from(response.as_bytes())?;
+        let rssfeed = rss::Channel::read_from(response.as_bytes())
+            .with_context(|| format!("failed to parse RSS feed from '{}'", self.url))?;
 
         let feed: Arc<Mutex<Box<dyn Feed>>> =
             Arc::new(Mutex::new(Box::new(self.clone()) as Box<dyn Feed>));
@@ -211,7 +212,7 @@ impl Feed for AtomFeed {
             Ok(feed) => feed,
             Err(e) => {
                 return Err(anyhow!(
-                    "failed to parse atom feed from '{}': {}",
+                    "failed to parse Atom feed from '{}': {}",
                     self.url,
                     e
                 ));
